@@ -1,0 +1,163 @@
+// Import the simpletest.js javascript
+<script src="./simpletest.js"></script>
+
+<script>
+/**
+ *
+ * librarySystem() creates or returns a library stored on the libraryStorage window object. 
+ * If the library has a dependency that is not present in the libraryStorage objec, 
+ * an error will be thrown and the library will not be created. 
+ * 
+ * Function signature:
+ * librarySystem('functionName', callback [, dependencyArray])
+ * 
+ * Load the library: 
+ * librarySystem('libraryName'); 
+ * 
+ * Create a library:
+ * librarySystem('libraryName', function(){
+ *  return 'libraryName'
+ * })
+ * 
+ * Create a library with dependencies:
+ * librarySystem('libraryName', function(){
+ *   return 'libraryName'
+ * }, ['dependency1', 'dependency2'])
+ *  
+*/
+
+// callback = function() {
+//   return 'libwithdeps'
+// }
+
+
+// librarySysytem('libwithdeps', function() {return 'libwithdeps'}, ['dep1', 'dep2'])
+
+// librarySystem('dep1', function() {return 'dep1'})
+// librarySystem('dep2', function() {return 'dep2'})
+
+// It should handle libraries created out of order
+//  potentially set timeout to come back to functions with deps? 
+// It should call the callback for each function only once 
+//  once-ify the functions (in the creation phase)
+
+
+
+
+
+// Create the libraryStorage window object;
+var libraryStorage = {};
+
+(function() {
+  
+  function librarySystem(libraryName, callback, dependencies) {
+    // Return the library for use 
+    if (arguments.length == 1) {
+      return libraryStorage[libraryName];
+
+    // Create the library with no dependencies
+    } else if (arguments.length == 2) {
+      // Make sure library has not already been loaded. 
+      if (!libraryStorage[libraryName]) {
+        libraryStorage[libraryName] = callback()  
+      }
+      
+    // Create the library with dependencies
+    } else if (arguments.length == 3) {
+      // Make sure library has not already been loaded. 
+      if (!libraryStorage[libraryName]) {
+        // setTimeout so the function will run after deps are loaded
+        setTimeout(function() {
+          for (item of dependencies) {
+            // if it doesn't exist on the window.libraryStorage object
+            if (!libraryStorage[item]) {
+              throw new ReferenceError(`Missing dependency ${item}`)
+              break;
+            }
+          }
+          libraryStorage[libraryName] = callback(...dependencies)
+        }, 0)
+      }
+    }
+  };
+
+  window.librarySystem = librarySystem;
+})();
+
+// Tests to be used with simpletest.js
+tests({
+  'It should be able to save and return properties on the libraryStorage object': function() {
+    var callback = function() {return 'property1'};
+    librarySystem('lib1', callback);
+    eq(libraryStorage['lib1'], 'property1');
+  },
+  'It should accept an array of dependencies as the third arg.':function () {
+    // Create the dependency
+    librarySystem('dep1', function() {return 'dep1'})
+   
+    var callback = function() {
+      // Check dependencies are being passed in as arguments
+      eq(arguments[0], 'dep1')
+      return 'lib2'
+    };
+    librarySystem('lib2', callback, ['dep1']);
+  },
+  'It should throw an error if the library requries non-present dependencies.':function () {
+    var callback = function() {};
+    var dependencies = ['dep2', 'dep3'];
+    
+    try { 
+      librarySystem('lib3', callback, dependencies)
+    } catch (error) {
+      eq(error.toString().includes('ReferenceError'), true)
+    }
+
+    eq(!window.libraryStorage['lib3'], true)
+  },
+  'It should accept multiple dependencies.':function () {
+    // Create the dependencies
+    librarySystem('check1', function() { return 'check1' });
+    librarySystem('check2', function() { return 'check2' });
+    librarySystem('check3', function() { return 'check3' });
+
+    var callback = function() {
+      eq(arguments[0], 'check1');
+      eq(arguments[1], 'check2');
+      eq(arguments[2], 'check3');
+      return 'lib4'
+    }
+    var dependencies = ['check1', 'check2', 'check3'];
+    
+    try { 
+      librarySystem('lib4', callback, dependencies)
+    } catch (error) {
+      eq(error.toString(), 'ReferenceError: Missing dependency')
+    }
+  },
+  'It should handle libraries created out of order': function() {
+    librarySystem('outOfOrderLib', function() {
+      return 'outOfOrderLib';
+    }, ['outOfOrderDep', 'outOfOrderDep2']);
+
+    librarySystem('outOfOrderDep', function() { return 'outOfOrderDep'});
+    librarySystem('outOfOrderDep2', function() { return 'outOfOrderDep2'});
+  },
+  'It should call the callback only once per library': function() {
+    var numberOfTimesCallbackHasRun = 0;
+    
+    // Call the library create function twice. 
+    librarySystem('onceifyTest', function() {
+      numberOfTimesCallbackHasRun ++;
+      return 'onceifyTest';
+    });
+    librarySystem('onceifyTest', function() {
+      numberOfTimesCallbackHasRun ++;
+      return 'onceifyTest';
+    });
+
+    eq(numberOfTimesCallbackHasRun, 1)
+  }
+});
+</script>
+
+
