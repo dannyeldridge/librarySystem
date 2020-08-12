@@ -26,25 +26,6 @@
  *  
 */
 
-// callback = function() {
-//   return 'libwithdeps'
-// }
-
-
-// librarySysytem('libwithdeps', function() {return 'libwithdeps'}, ['dep1', 'dep2'])
-
-// librarySystem('dep1', function() {return 'dep1'})
-// librarySystem('dep2', function() {return 'dep2'})
-
-// It should handle libraries created out of order
-//  potentially set timeout to come back to functions with deps? 
-// It should call the callback for each function only once 
-//  once-ify the functions (in the creation phase)
-
-
-
-
-
 // Create the libraryStorage window object;
 var libraryStorage = {};
 
@@ -69,7 +50,7 @@ var libraryStorage = {};
         // setTimeout so the function will run after deps are loaded
         setTimeout(function() {
           for (item of dependencies) {
-            // if it doesn't exist on the window.libraryStorage object
+            // If the dependency doesn't exist on the window.libraryStorage object
             if (!libraryStorage[item]) {
               throw new ReferenceError(`Missing dependency ${item}`)
               break;
@@ -135,6 +116,7 @@ tests({
     }
   },
   'It should handle libraries created out of order': function() {
+    // debugger;
     librarySystem('outOfOrderLib', function() {
       return 'outOfOrderLib';
     }, ['outOfOrderDep', 'outOfOrderDep2']);
@@ -142,7 +124,7 @@ tests({
     librarySystem('outOfOrderDep', function() { return 'outOfOrderDep'});
     librarySystem('outOfOrderDep2', function() { return 'outOfOrderDep2'});
   },
-  'It should call the callback only once per library': function() {
+  'It should call the callback (create) only once per library': function() {
     var numberOfTimesCallbackHasRun = 0;
     
     // Call the library create function twice. 
@@ -158,6 +140,6 @@ tests({
     eq(numberOfTimesCallbackHasRun, 1)
   }
 });
-</script>
+</script> 
 
 
